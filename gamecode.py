@@ -21,20 +21,28 @@ with open('high.txt', 'r') as file:
         game_high = int(file.read())
 FPS = 60
 colorlist = [GREEN, (173, 255, 47), (52,201,36), (0,69,36), (124,252,0), (0,102,51), (19,136,8), (191,255,0)] 
-
+pygame.init()
+main_sound = pygame.mixer.Sound('main_sound.mp3')
+jump_sound = pygame.mixer.Sound('jump.wav')
+count_sound = pygame.mixer.Sound('countdown.mp3')
+start_sound = pygame.mixer.Sound('final.mp3')
+q_sound = pygame.mixer.Sound('q_tap.mp3')
+fail_sound = pygame.mixer.Sound('fail.mp3')
 def restart():
-    global chunks, emp, game_speed, game_score, bsp, j, did, jr, ball_img
+    global chunks, emp, game_speed, game_score, game_hb, bsp, j, did, jr, ball_img
     jr = False
-    game_speed = 3 
+    game_speed = 4
     game_score = 0
     bsp = 1
     j = False
     did = 0
+    game_hb = True
     chunks = [Chunk(150, 350, GREEN)]
     emp = Empty(170, 330, 20, (255, 0, 0)) 
     pygame.display.update()
     pygame.draw.rect(screen, BLACK, (0, 0, screen_width, screen_height))
     ball_img = pygame.image.load('ball_texture.png')
+    main_sound.play()
 
 
 def draw_background(main_color):
@@ -62,7 +70,7 @@ def pr_text(txt, cord=(320, 240), n=20, color=(255, 255, 255)):
 
 def punch(emp, chunk):
     if chunk.sp and chunk.block_spawn + chunk.sp_x - emp.rad <= emp.x <= chunk.block_spawn + 20 + chunk.sp_x + emp.rad - 2 and emp.y > 290:
-        return True
+        return game_hb
     return False
 
 def chunk_generated():
@@ -72,6 +80,9 @@ def chunk_generated():
         if chunks[i] and    chunks[i].sp_x <= 0 - chunks[i].ch_width:
             chunks[i] = None
 
+def switch_hb():
+    global game_hb
+    game_hb = not game_hb
 
 
 class Empty():
@@ -90,6 +101,8 @@ class Empty():
             self.njump -= 2
 
     def jump(self):
+        if self.jumpstade == 1:
+            jump_sound.play()
         if self.jumpstade <= ((self.njump - 5) / 2):
             self.y -= 85 / ((self.njump - 5) / 2)
         elif self.jumpstade > ((self.njump - 5) / 2) + 5:
@@ -132,20 +145,23 @@ class Chunk():
                 self.surf = self.img.get_rect(center = (self.sp_x + self.block_spawn + 10, self.sp_y - 30))
                 screen.blit(self.img, self.surf)
 
+count_sound.play()
 pygame.draw.rect(screen, BLACK, (0, 0, screen_width, screen_height))
 pr_text('SPACE to jump', cord=(screen_width // 2 - 50, screen_height // 2 - 50), n=30)
 pygame.display.update()
-sleep(0.5)
+sleep(1)
 
+count_sound.play()
 pygame.draw.rect(screen, BLACK, (0, 0, screen_width, screen_height))
 pr_text('Q to faster jump', cord=(screen_width // 2 - 50, screen_height // 2 - 50), n=30)
 pygame.display.update()
-sleep(0.5)
+sleep(1)
 
+start_sound.play()
 pygame.draw.rect(screen, BLACK, (0, 0, screen_width, screen_height))
 pr_text("LET'S GO", cord=(screen_width // 2 - 50, screen_height // 2 - 50), n=35)
 pygame.display.update()
-sleep(1)
+sleep(1.5)
 
 
 
@@ -157,7 +173,8 @@ while True:
             break 
 
         if punch(emp, chunks[i]):
-            clock.tick(1000**100)
+            main_sound.stop()
+            fail_sound.play()
 
             if i == did:
                 game_score -= 1
@@ -166,8 +183,8 @@ while True:
                 with open('high.txt', 'w') as file:
                     file.write(str(game_high))
 
-            pr_text(f'game over, score - {game_score}  hight - {game_high}', n=36, cord=(100, 130))
-            pr_text('SPACE to restart', n=30, cord=(170, 200))
+            pr_text(f'game over, score - {game_score}  hight - {game_high}', n=36, cord=(250, 130))
+            pr_text('SPACE to restart', n=30, cord=(350, 200))
 
             pygame.display.update()
             events = pygame.event.get()
@@ -186,7 +203,7 @@ while True:
                     if e.type == pygame.QUIT or e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                         exit()
                 pass
-
+            fail_sound.stop()
             restart()
             break
 
@@ -199,6 +216,8 @@ while True:
             j = True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
             jr = True
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_h: 
+            switch_hb()
 
     if j:
         emp.jump()
@@ -209,13 +228,15 @@ while True:
         emp.is_score(c)
          
     if jr and emp.jumpstade == 1:
+        q_sound.play()
         emp.jump_reset()
         jr = False
     
     chunk_generated()
     draw_background((149, 200, 216))
     moving_chunks(chunks)
-    game_speed *= 1.0007 
+    if game_speed < 8:
+        game_speed *= 1.0005
     pr_text(f'this-{game_score} high-{game_high}', cord=(50, 50))
     rotate(screen, ball_img, -rot % 360)
     if not j:
