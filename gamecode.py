@@ -29,26 +29,25 @@ start_sound = pygame.mixer.Sound('final.mp3')
 q_sound = pygame.mixer.Sound('q_tap.mp3')
 fail_sound = pygame.mixer.Sound('fail.mp3')
 def restart():
-    global chunks, emp, game_speed, game_score, game_hb, bsp, j, did, jr, ball_img
+    global chunks, emp, game_speed, game_score, game_hb, bsp, j, did, jr, ball_img, game_cheats
     jr = False
     game_speed = 4
     game_score = 0
     bsp = 1
     j = False
+    game_cheats = False
     did = 0
     game_hb = True
     chunks = [Chunk(150, 350, GREEN)]
     emp = Empty(170, 330, 20, (255, 0, 0)) 
     pygame.display.update()
     pygame.draw.rect(screen, BLACK, (0, 0, screen_width, screen_height))
-    ball_img = pygame.image.load('ball_texture.png')
+    ball_img = pygame.image.load('ball1.png')
     main_sound.play()
-
 
 def draw_background(main_color):
     pygame.draw.rect(screen, main_color, (0, 0, screen_width, screen_height))
     pygame.draw.circle(screen, (249, 229, 38), (screen_width, 0), 100)
-
 
 def rotate(screen, image, angle):
 
@@ -81,9 +80,9 @@ def chunk_generated():
             chunks[i] = None
 
 def switch_hb():
-    global game_hb
+    global game_hb, game_cheats
     game_hb = not game_hb
-
+    game_cheats = True
 
 class Empty():
     def __init__(self, x, y, rad, col) -> None:
@@ -96,9 +95,9 @@ class Empty():
         self.last = game_speed
         pygame.draw.circle(screen, self.col, (self.x, self.y), self.rad)
 
-    def jump_reset(self):
-        if self.njump > 9:
-            self.njump -= 2
+    def jump_reset(self, upd):
+        if self.njump > 0:
+            self.njump -= 2 * upd
 
     def jump(self):
         if self.jumpstade == 1:
@@ -178,7 +177,7 @@ while True:
 
             if i == did:
                 game_score -= 1
-            if game_score > game_high:
+            if game_score > game_high and not game_cheats:
                 game_high = game_score
                 with open('high.txt', 'w') as file:
                     file.write(str(game_high))
@@ -214,8 +213,12 @@ while True:
             exit()
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not j:
             j = True
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+        if event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_e):
             jr = True
+            if event.key == pygame.K_q:
+                upd = 1
+            else:
+                upd = -1
         if event.type == pygame.KEYDOWN and event.key == pygame.K_h: 
             switch_hb()
 
@@ -229,7 +232,7 @@ while True:
          
     if jr and emp.jumpstade == 1:
         q_sound.play()
-        emp.jump_reset()
+        emp.jump_reset(upd)
         jr = False
     
     chunk_generated()
@@ -238,6 +241,8 @@ while True:
     if game_speed < 8:
         game_speed *= 1.0005
     pr_text(f'this-{game_score} high-{game_high}', cord=(50, 50))
+    if not game_hb:
+        pr_text('!GOD MODE!', cord=(400, 50), n=40, color=(227,20,20))
     rotate(screen, ball_img, -rot % 360)
     if not j:
         rot += 5
