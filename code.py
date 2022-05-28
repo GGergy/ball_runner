@@ -20,7 +20,6 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 BROWN = (150, 75, 0)
 rot = 0.1
-phonk = 0
 menu = True
 username = False
 clock =  pygame.time.Clock()
@@ -39,7 +38,7 @@ q_sound = pygame.mixer.Sound('q_tap.mp3')
 fail_sound = pygame.mixer.Sound('fail.mp3')
 def restart():
     global chunks, emp, game_speed, game_score, game_hb, in_phonk, bsp, j, did, jr, ball_img, zero_d, sun_color, main_color, colorlist, game_cheats, main_sound, main_song_name, ball_skin, wl, circles, colorlist, username
-    game_speed = 4
+    game_speed = 4 * (60 / FPS)
     game_score = 0
     bsp = 1
     j = False
@@ -316,7 +315,7 @@ def switch_hb():
 
 def phonk():
     global in_phonk, colorlist, sun_color, chunks, main_color, circles, game_speed
-    game_speed = 12
+    game_speed = 12 * (60 / FPS)
     in_phonk = True
     colorlist = [(128,0,128), (89,0,128), (140,0,128), (50,0,128), (113,0,128), (36,0,128), (61,0,128)]
     sun_color = (189,208,228)
@@ -327,8 +326,7 @@ def phonk():
     chunks.clear()
     chunks = [Chunk(0, screen_height // 2 - 100, (128,0,128), invin=True)]
     circles = []
-    while emp.njump > 18:
-        emp.jump_reset(1)
+    emp.njump = 18 * (FPS / 60)
     chunk_generated(4)
     sleep(2)
 
@@ -339,24 +337,24 @@ class Empty:
         self.y = y
         self.rad = rad
         self.col = col
-        self.njump = 45
+        self.njump = 45 * (FPS / 60)
         self.jumpstade = 1
         self.last = game_speed
         self.futurejump = False
 
     def jump_reset(self, upd):
-        if self.njump > 10:
-            self.njump -= 2 * upd
+        if self.njump > 10 * (FPS / 60):
+            self.njump -= 2 * upd * (FPS / 60)
         if upd < 0:
-            self.njump -= 2 * upd
+            self.njump -= 2 * upd * (FPS / 60)
 
     def jump(self):
         if self.jumpstade == 1:
             jump_sound.play()
-        if self.jumpstade <= ((self.njump - 5) / 2):
-            self.y -= 85 / ((self.njump - 5) / 2)
-        elif self.jumpstade > ((self.njump - 5) / 2) + 5:
-            self.y += 85 / ((self.njump - 5) / 2)   
+        if self.jumpstade <= ((self.njump - (5 * (FPS / 60))) / 2):
+            self.y -= 85 / ((self.njump - (5 * (FPS / 60))) / 2)
+        elif self.jumpstade > ((self.njump - (5 * (FPS / 60))) / 2) + 5 * (FPS / 60):
+            self.y += 85 / ((self.njump - (5 * (FPS / 60))) / 2)  
 
         if self.jumpstade >= self.njump:
             self.jumpstade = 1
@@ -406,7 +404,7 @@ class Circles:
         self.rad = 0
         self.maxrad = 75
         self.stade = 1
-        self.nstade = wl[main_song_name][1]
+        self.nstade = wl[main_song_name][1] * (FPS / 60)
         self.y = random.randint(0, screen_height)
         self.x = random.randint(0, screen_width)
         self.color = random.choice(colorlist)
@@ -419,7 +417,6 @@ class Circles:
             self.rad -= self.maxrad / ((self.nstade - 5) // 2)
         self.stade += 1
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.rad)
-
 
 class Button:
     def __init__(self, x, y, w ,h, type=False, song_id=False) -> None:
@@ -476,15 +473,12 @@ while True:
             pygame.display.update()
             events = pygame.event.get()
             f = False
-
             for e in events:
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_LCTRL:
                     f = True
-
             while not f:
                 events = pygame.event.get()
                 for e in events:
-
                     if e.type == pygame.KEYDOWN:
                         if e.key == pygame.K_LCTRL:
                             f = True
@@ -563,9 +557,9 @@ while True:
         game_speed *= 1.0005
     rotate(screen, ball_img, -rot % 360)
     if not j:
-        rot += 5
+        rot += 5 * (60 / FPS)
     else:
-        rot += 2
+        rot += 2 * (60 / FPS)
     if default_timer() - zero_d >= main_sound.get_length() // 1 + 2:
         if game_score > game_high and not game_cheats:
             game_high = game_score
